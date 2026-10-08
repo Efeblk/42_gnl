@@ -1,74 +1,79 @@
-<h1 align="center">
-	📖 get_next_line
-</h1>
+# get_next_line
 
-<p align="center">
-	<b><i>Reading a line on a fd is way too tedious</i></b><br>
-</p>
+A C function that reads one line at a time from a file descriptor. This 42 project repository contains both the mandatory and bonus source variants.
 
-<p align="center">
-	<img alt="GitHub code size in bytes" src="https://img.shields.io/github/languages/code-size/jdecorte-be/42-Get-next-line?color=lightblue" />
-	<img alt="Number of lines of code" src="https://img.shields.io/tokei/lines/github/jdecorte-be/42-Get-next-line?color=critical" />
-	<img alt="Code language count" src="https://img.shields.io/github/languages/count/jdecorte-be/42-Get-next-line?color=yellow" />
-	<img alt="GitHub top language" src="https://img.shields.io/github/languages/top/jdecorte-be/42-Get-next-line?color=blue" />
-	<img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/jdecorte-be/42-Get-next-line?color=green" />
-</p>
+```c
+char *get_next_line(int fd);
+```
 
-<h3 align="center">
-	<a href="#%EF%B8%8F-about">About</a>
-	<span> · </span>
-	<a href="#%EF%B8%8F-usage">Usage</a>
-	<span> · </span>
-	<a href="#-testing">Testing</a>
-</h3>
+Each returned line is allocated on the heap and includes its trailing newline when one is present. The caller must free it. `NULL` indicates that no line remains or that a descriptor/read check failed.
 
----
+## Source variants
 
-## 💡 About the project
+| Variant | Files | Buffered state |
+| --- | --- | --- |
+| Mandatory | `get_next_line.c`, `get_next_line_utils.c`, `get_next_line.h` | One static buffer |
+| Bonus | `get_next_line_bonus.c`, `get_next_line_utils_bonus.c`, `get_next_line_bonus.h` | Separate static buffers indexed by file descriptor |
 
-> _The aim of this project is to make you code a function that returns a line, read from a file descriptor._
+Use one variant at a time. Both export the same function and helper names, so they should not be linked together. Use the bonus variant when alternating between multiple file descriptors.
 
-	You will understand how files are opened, read and closed in an OS,
-	and how they are interpreted by a programming language for further analysis.
-	This task is crucial to understand for a future programmer since much of the time is based
-	on manipulating files for data management and persistence.
-	This project consists of coding a function that returns one line at a time from a text file.
+## Build and usage
 
-For more detailed information, look at the [**subject of this project**](https://github.com/jdecorte-be/42-Get-next-line/blob/master/en.subject.pdf).
+Requires a C compiler and a system providing POSIX `read` and the headers included by the project. There is no root Makefile or bundled application entry point.
 
+```sh
+git clone https://github.com/Efeblk/42_gnl.git
+cd 42_gnl
+```
 
-## 🛠️ Usage
+`BUFFER_SIZE` is the number of bytes requested per read. The headers do not define a default, so supply a positive value when compiling.
 
-### Requirements
+Save this example as `main.c` in the repository root:
 
-The function is written in C language and thus needs the **`gcc` compiler** and some standard **C libraries** to run.
-
-### Instructions
-
-**1. Using it in your code**
-
-To use the function in your code, simply include its header:
-
-```C
+```c
 #include "get_next_line.h"
+#include <stdio.h>
+
+int main(void)
+{
+    char *line;
+
+    line = get_next_line(STDIN_FILENO);
+    while (line != NULL)
+    {
+        fputs(line, stdout);
+        free(line);
+        line = get_next_line(STDIN_FILENO);
+    }
+    return (0);
+}
 ```
 
-and, when compiling your code, add the source files and the required flag:
+Compile the mandatory sources and read a text file through standard input:
 
-```shell
-get_next_line.c get_next_line_utils.c -D BUFFER_SIZE=<size>
+```sh
+gcc -Wall -Wextra -Werror -D BUFFER_SIZE=42 \
+    main.c get_next_line.c get_next_line_utils.c -o example
+./example < path/to/file.txt
 ```
 
-## 📋 Testing
+For the bonus variant, include `get_next_line_bonus.h` in `main.c` and compile:
 
-You only have to edit the get_next_line.c file and uncomment the main function and headers inside it.
-You can edit test.txt files to put another text if you wish to test othe cases.
-Then simply run this command (change "xx" with desired buffer size) :
-
-```shell
-gcc -Wall -Werror -Wextra -D BUFFER_SIZE=xx get_next_line.c get_next_line_utils.c && ./a.out
+```sh
+gcc -Wall -Wextra -Werror -D BUFFER_SIZE=42 \
+    main.c get_next_line_bonus.c get_next_line_utils_bonus.c -o example_bonus
 ```
 
-Or you can also use this third party tester to fully test the project
+The bonus source uses `OPEN_MAX` from `<limits.h>`; the build environment must provide that constant. File descriptors used with this variant must be below `OPEN_MAX`, because they index its static buffer array.
 
-* [Tripouille/gnlTester](https://github.com/Tripouille/gnlTester)
+## Repository guide
+
+- `get_next_line*.c` — reading, line extraction, and leftover-buffer handling.
+- `get_next_line_utils*.c` — string and allocation helpers.
+- `get_next_line*.h` — declarations and required headers.
+- [en.subject.pdf](en.subject.pdf) — the project subject included in this repository.
+- `gnlTester/` — bundled third-party tester; see its [README](gnlTester/README.md) for mandatory and bonus test commands.
+
+## Credits
+
+The source file headers credit `jdecorte`. The bundled tester includes its own documentation and credits; preserve those when reusing the project.
